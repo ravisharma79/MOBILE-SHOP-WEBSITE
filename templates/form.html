@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            background: url("{{ url_for('static', filename='bg.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            width: 500px;
+        }
+        .form-container {
+            background-color: rgba(46, 46, 46, 0.8);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            height: 500px;
+            position: relative;
+        }
+        .form-container h2 {
+            margin-bottom: 30px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .form-container label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cccccc;
+        }
+        .form-container input[type="text"],
+        .form-container input[type="password"] {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0 20px 0;
+            border: 1px solid #cccccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .form-container input[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background-color: #00796b;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .form-container input[type="submit"]:hover {
+            background-color: #004d40;
+        }
+        .form-container .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .form-container .forgot-password {
+            text-align: right;
+            margin-top: 10px;
+        }
+        .form-container .forgot-password a {
+            color: white;
+            text-decoration: none;
+        }
+        .form-container .forgot-password a:hover {
+            text-decoration: underline;
+        }
+        .form-container .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        .form-container .checkbox-group input {
+            margin-right: 10px;
+        }
+        .form-container .toggle-link {
+            text-align: center;
+            margin-top: 20px;
+            color: white;
+            cursor: pointer;
+        }
+        .form-container .toggle-link:hover {
+            text-decoration: underline;
+        }
+        .flash-message {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            background-color: rgba(255, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        <p>{{ message }}</p>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="form-container" id="signup-form" {% if show_login %}style="display: none;"{% endif %}>
+            <h2>Sign Up</h2>
+            <form action="/signup" method="post">
+                <label for="new-username">Email</label>
+                <input type="text" id="new-username" name="username" required>
+                <label for="new-password">Password</label>
+                <input type="password" id="new-password" name="password" required>
+                <div class="options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-new-password">
+                        <label for="show-new-password">Show Password</label>
+                    </div>
+                </div>
+                <input type="submit" value="Sign Up">
+                <div class="toggle-link" onclick="toggleForm()">Already have an account? Login</div>
+            </form>
+        </div>
+        <div class="form-container" id="login-form" {% if not show_login %}style="display: none;"{% endif %}>
+            <h2>Login</h2>
+            <form action="/login" method="post" onsubmit="return validateLogin()">
+                <label for="username">Email</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+                <div class="options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-password">
+                        <label for="show-password">Show Password</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Remember Me</label>
+                    </div>
+                </div>
+                <input type="submit" value="Login">
+                <div class="forgot-password">
+                    <a href="/forgot-password">Forgot Password?</a>
+                </div>
+                <div class="toggle-link" onclick="toggleForm()">Don't have an account? Sign Up</div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const passwordField = document.getElementById('password');
+        const showPasswordCheckbox = document.getElementById('show-password');
+
+        showPasswordCheckbox.addEventListener('change', () => {
+            if (showPasswordCheckbox.checked) {
+                passwordField.setAttribute('type', 'text');
+            } else {
+                passwordField.setAttribute('type', 'password');
+            }
+        });
+
+        const newPasswordField = document.getElementById('new-password');
+        const showNewPasswordCheckbox = document.getElementById('show-new-password');
+
+        showNewPasswordCheckbox.addEventListener('change', () => {
+            if (showNewPasswordCheckbox.checked) {
+                newPasswordField.setAttribute('type', 'text');
+            } else {
+                newPasswordField.setAttribute('type', 'password');
+            }
+        });
+
+        function toggleForm() {
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+            } else {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+            }
+        }
+
+        function validateLogin() {
+            const usernameInput = document.getElementById('username').value;
+            const passwordInput = document.getElementById('password').value;
+
+            if (!usernameInput || !passwordInput) {
+                alert('Please enter both username and password.');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Hide flash message after 10 seconds
+        setTimeout(() => {
+            const flashMessage = document.querySelector('.flash-message');
+            if (flashMessage) {
+                flashMessage.remove(); // Remove the flash message from the DOM
+            }
+        }, 10000); // 10000 milliseconds = 10 seconds
+    </script>
+</body>
+</html>
