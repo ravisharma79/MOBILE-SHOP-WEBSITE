@@ -24,7 +24,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Configure session to use filesystem (instead of signed cookies)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session lifetime
-
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT'))
@@ -115,31 +114,39 @@ def signup():
     password = request.form.get('password')
 
     if username and password:
+        # Validate email format
         if not is_valid_email(username):
-            flash('Invalid email address.', 'error')
-            return redirect(url_for('index'))  # Redirect to signup page with error
+            flash('Invalid email format. Please provide a valid email address.', 'error')
+            return redirect(url_for('index'))
 
+        # Check email deliverability
         if not is_existing_email(username):
             flash('The email address does not exist or cannot receive emails.', 'error')
-            return redirect(url_for('index'))  # Redirect to signup page with error
+            return redirect(url_for('index'))
 
-        # Check if the username already exists
+        # Check for username existence in the database
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            flash('Username already exists. Please choose a different one.', 'error')
-            return redirect(url_for('index'))  # Redirect to signup page with error
+            flash('Email is already associated with an account. Please log in or use a different email.', 'error')
+            return redirect(url_for('index'))
 
-        # Create a new user with the submitted username and hashed password
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        new_user = User(username=username, password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-
-        session['username'] = username
-        return redirect(url_for('homepage'))  # Redirect to homepage after successful sign-up
+        # Create a new user and save to the database
+        try:
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+            new_user = User(username=username, password=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+            session['username'] = username
+            flash('Sign-up successful! Welcome!', 'success')
+            return redirect(url_for('homepage'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred during sign-up. Please try again.', 'error')
+            print(f"Sign-up error: {e}")
+            return redirect(url_for('index'))
     else:
-        flash('Please enter both username and password.', 'error')
-        return redirect(url_for('index'))  # Redirect to signup page with error
+        flash('Please fill in both username and password.', 'error')
+        return redirect(url_for('index'))
 # Route to handle logout
 @app.route('/logout')
 def logout():
